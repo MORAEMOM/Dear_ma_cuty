@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zero2</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f7f4ef;
+      font-family: Arial, sans-serif;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 720px;
+      text-align: center;
+    }
+
+    .box {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    audio {
+      width: 100%;
+      margin: 18px 0;
+    }
+
+    input {
+      width: 220px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 14px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 12px;
+      background: #333;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #555;
+    }
+
+    .nonogram {
+      display: grid;
+      grid-template-columns: 52px repeat(15, 28px);
+      grid-template-rows: 62px repeat(15, 28px);
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .corner,
+    .top-hint,
+    .left-hint,
+    .cell {
+      border: 1px solid #222;
+      box-sizing: border-box;
+    }
+
+    .corner,
+    .top-hint,
+    .left-hint {
+      background: #ccc;
+      color: #10253d;
+      font-weight: bold;
+    }
+
+    .top-hint {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 4px;
+      white-space: pre-line;
+      font-size: 18px;
+      line-height: 1.05;
+    }
+
+    .left-hint {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 18px;
+    }
+
+    .cell {
+      width: 28px;
+      height: 28px;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
+    .cell.checked {
+      background: #222;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      min-height: 34px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="box" id="startBox">
+      <h2>음성을 듣고 정답을 입력하세요.</h2>
+
+      <audio controls>
+        <source src="../resource/quiz.mp4" type="audio/mp4">
+        브라우저가 오디오 재생을 지원하지 않습니다.
+      </audio>
+
+      <br />
+
+      <input type="text" id="audioAnswer" placeholder="정답 입력" />
+      <br />
+      <button onclick="checkAudioAnswer()">입력</button>
+    </div>
+
+    <div class="box" id="nonogramBox" style="display:none;">
+      <h2>네모로직을 풀어라</h2>
+      <div class="nonogram" id="nonogram"></div>
+      <button onclick="checkNonogram()">입력</button>
+      <div class="message" id="message"></div>
+    </div>
+  </div>
+
+  <script>
+    function checkAudioAnswer() {
+      const value = document.getElementById("audioAnswer").value.trim().toLowerCase();
+
+      if (value === "world vanquisher") {
+        document.getElementById("startBox").style.display = "none";
+        document.getElementById("nonogramBox").style.display = "block";
+        createBoard();
+      } else {
+        alert("다시 들어봐!");
+      }
+    }
+
+    document.getElementById("audioAnswer").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        checkAudioAnswer();
+      }
+    });
+
+    const topHints = [
+      "", "", "", "3", "2\n1", "2\n2", "8\n1", "1\n2", "1\n2", "1\n2", "1\n2", "9", "", "", ""
+    ];
+
+    const leftHints = [
+      "", "6", "1 1", "1 1", "1 1", "1 1", "1 1", "1 1",
+      "2 1", "2 2", "2 2", "1 2", "3 2", "3", ""
+    ];
+
+    const answer = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,1,1,0,0,0,0,1,0,0,0],
+      [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0],
+      [0,0,0,1,1,0,0,0,0,1,1,0,0,0,0],
+      [0,0,0,1,0,0,0,0,1,1,0,0,0,0,0],
+      [0,0,0,1,1,1,0,1,1,0,0,0,0,0,0],
+      [0,0,0,0,0,1,1,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    ];
+
+    const cells = [];
+    let boardCreated = false;
+
+    function createBoard() {
+      if (boardCreated) return;
+      boardCreated = true;
+
+      const nonogram = document.getElementById("nonogram");
+
+      const corner = document.createElement("div");
+      corner.className = "corner";
+      nonogram.appendChild(corner);
+
+      topHints.forEach(hint => {
+        const div = document.createElement("div");
+        div.className = "top-hint";
+        div.textContent = hint;
+        nonogram.appendChild(div);
+      });
+
+      for (let r = 0; r < 15; r++) {
+        const left = document.createElement("div");
+        left.className = "left-hint";
+        left.textContent = leftHints[r];
+        nonogram.appendChild(left);
+
+        cells[r] = [];
+
+        for (let c = 0; c < 15; c++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+
+          cell.addEventListener("click", () => {
+            cell.classList.toggle("checked");
+          });
+
+          cells[r][c] = cell;
+          nonogram.appendChild(cell);
+        }
+      }
+    }
+
+    function checkNonogram() {
+      for (let r = 0; r < 15; r++) {
+        for (let c = 0; c < 15; c++) {
+          const checked = cells[r][c].classList.contains("checked") ? 1 : 0;
+
+          if (checked !== answer[r][c]) {
+            document.getElementById("message").textContent = "Nope";
+            return;
+          }
+        }
+      }
+
+      document.getElementById("message").textContent = "이건 어디에 보관되어 있게~";
+    }
+  </script>
+</body>
+</html>

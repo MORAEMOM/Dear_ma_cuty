@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Eight</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f7f4ef;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 520px;
+      text-align: center;
+    }
+
+    .text-box {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 20px;
+      line-height: 1.7;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .animal-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .animal {
+      padding: 12px;
+      border-radius: 12px;
+      background: #eee;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .animal:hover {
+      background: #ddd;
+    }
+
+    .result {
+      margin-top: 16px;
+      font-weight: bold;
+      min-height: 30px;
+    }
+
+    .reset-btn {
+      margin-top: 14px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #333;
+      color: white;
+      cursor: pointer;
+    }
+
+    .mail-box {
+      font-size: 80px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    .big-text {
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="container">
+    <div class="text-box">
+      슬슬 문제 아이디어가 떨어져가…!<br><br>
+      그치만 나 강소희 포기하지 않는다…<br>
+      가벼운 퀴즈를 내징.<br><br>
+      내가 좋아하는 순으로 클릭하시오.
+    </div>
+
+    <div class="animal-list" id="list">
+      <div class="animal" onclick="select(1)">🐱 고양이</div>
+      <div class="animal" onclick="select(2)">🐰 토끼</div>
+      <div class="animal" onclick="select(3)">🐹 햄스터</div>
+      <div class="animal" onclick="select(4)">🐬 돌고래</div>
+      <div class="animal" onclick="select(5)">🐶 강아지</div>
+    </div>
+
+    <div class="result" id="result"></div>
+    <button class="reset-btn" id="reset" onclick="resetGame()" style="display:none;">다시 시도</button>
+  </div>
+
+  <script>
+    const correctOrder = [1, 3, 2, 5, 4];
+    let userOrder = [];
+
+    function select(num) {
+      userOrder.push(num);
+
+      document.getElementById("result").textContent = "입력 순서: " + userOrder.join(" → ");
+
+      if (userOrder.length === correctOrder.length) {
+        checkAnswer();
+      }
+    }
+
+    function checkAnswer() {
+      const isCorrect = userOrder.every((v, i) => v === correctOrder[i]);
+
+      if (isCorrect) {
+        showMail();
+      } else {
+        document.getElementById("result").textContent =
+          "틀렸어 😏 (" + userOrder.join(" → ") + ")";
+        document.getElementById("reset").style.display = "inline-block";
+      }
+    }
+
+    function resetGame() {
+      userOrder = [];
+      document.getElementById("result").textContent = "";
+      document.getElementById("reset").style.display = "none";
+    }
+
+    function showMail() {
+      const container = document.getElementById("container");
+
+      container.innerHTML = `
+        <div class="mail-box" onclick="goNext()">📬</div>
+        <div class="big-text">여기로 가봐!</div>
+      `;
+    }
+
+    function goNext() {
+      alert("입력했던 순서: " + userOrder.join(" → "));
+    }
+  </script>
+</body>
+</html>

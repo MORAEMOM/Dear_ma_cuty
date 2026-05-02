@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nine</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle, #30323a 0%, #111 70%);
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 680px;
+      text-align: center;
+    }
+
+    .box {
+      background: rgba(20, 20, 20, 0.88);
+      border: 1px solid #555;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+      line-height: 1.8;
+    }
+
+    .story {
+      font-size: 1.05rem;
+      white-space: pre-line;
+      margin-bottom: 24px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+    }
+
+    button {
+      padding: 13px 16px;
+      border: 1px solid #777;
+      border-radius: 14px;
+      background: #222;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #3a3a3a;
+      transform: scale(1.02);
+    }
+
+    .big-emoji {
+      font-size: 5rem;
+      margin-bottom: 18px;
+    }
+
+    .lock-area {
+      position: relative;
+      display: inline-block;
+      margin: 20px 0;
+    }
+
+    .lock {
+      font-size: 6rem;
+      opacity: 0.95;
+    }
+
+    .hidden-text {
+      position: absolute;
+      left: 50%;
+      top: 54%;
+      transform: translate(-50%, -50%);
+      font-size: 1rem;
+      color: black;
+      opacity: 0.16;
+      white-space: nowrap;
+      pointer-events: none;
+      font-weight: bold;
+    }
+
+    input {
+      width: 160px;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.1rem;
+      margin: 10px 0;
+    }
+
+    .note {
+      font-size: 6rem;
+      margin-bottom: 20px;
+      animation: pop 0.4s ease;
+    }
+
+    .final-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      line-height: 1.7;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0.6);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="container"></div>
+
+  <script>
+    const container = document.getElementById("container");
+
+    function showStart(message = "") {
+      container.innerHTML = `
+        <div class="box">
+          ${message ? `<div class="big-emoji">🌫️</div><div class="story">${message}</div>` : ""}
+
+          <div class="story">
+어두운 밤, 늦게 들어오는 소희를 마중가기 위해 집 밖을 나섰습니다.
+하얀 안개가 앞을 가리더니 눈 앞에 문이 4개가 생깁니다.
+
+어느 문으로 들어갈까?
+          </div>
+
+          <div class="choices">
+            <button onclick="wrongDoor('앗 미끄러졌다!')">🪨 1. 이끼가 낀 돌 문</button>
+            <button onclick="blueDoor()">🚪 2. 페인트 칠이 벗겨진 파란 색 문</button>
+            <button onclick="wrongDoor('거미한테 잡혀버렸다!')">🕸️ 3. 거미줄이 가득한 문</button>
+            <button onclick="wrongDoor('어머 집에 왔니?\\n집에 도착해버렸다.')">🏠 4. 평범한 대문</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function wrongDoor(text) {
+      showStart(text);
+    }
+
+    function blueDoor(extra = "") {
+      container.innerHTML = `
+        <div class="box">
+          <div class="big-emoji">📦</div>
+
+          ${extra ? `<div class="story">${extra}</div>` : ""}
+
+          <div class="story">
+방 안에 수상한 상자가 있다.
+열어볼까?
+          </div>
+
+          <div class="choices">
+            <button onclick="showLock()">⭕ O</button>
+            <button onclick="blueDoor('아무 일도 일어나지 않았다.')">❌ X</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function showLock() {
+      container.innerHTML = `
+        <div class="box">
+          <div class="story">
+비밀번호가 걸린 자물쇠가 걸려있다.
+          </div>
+
+          <div class="lock-area">
+            <div class="lock">🔒</div>
+            <div class="hidden-text">우리의 시작</div>
+          </div>
+
+          <br />
+
+          <input type="password" id="password" placeholder="비밀번호" maxlength="4" />
+          <br />
+          <button onclick="checkPassword()">입력</button>
+        </div>
+      `;
+
+      document.getElementById("password").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          checkPassword();
+        }
+      });
+    }
+
+    function checkPassword() {
+      const value = document.getElementById("password").value.trim();
+
+      if (value === "0629") {
+        container.innerHTML = `
+          <div class="box">
+            <div class="note">📝</div>
+            <div class="final-text">
+              여기는 니가 있을 곳이 아니야!
+            </div>
+          </div>
+        `;
+
+        setTimeout(() => {
+          window.location.href = "Lock.html";
+        }, 1600);
+      } else {
+        alert("철컥... 열리지 않는다.");
+      }
+    }
+
+    showStart();
+  </script>
+</body>
+</html>
