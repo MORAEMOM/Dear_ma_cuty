@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nonogram</title>
+  <title>One</title>
 
   <style>
     body {
@@ -15,6 +15,7 @@
       background: #222831;
       color: white;
       font-family: Arial, sans-serif;
+      user-select: none;
     }
 
     .wrap {
@@ -71,18 +72,50 @@
       height: 28px;
       background: #2f363d;
       cursor: pointer;
+      position: relative;
     }
 
     .cell.checked {
       background: #f7f4ef;
     }
 
-    .cell:nth-child(5n) {
-      border-right-color: #aaa;
+    .cell.x::after {
+      content: "✕";
+      color: #ff6b6b;
+      font-size: 17px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
     }
 
-    button {
-      margin-top: 18px;
+    .cell.wrong {
+      background: #ff4d4d !important;
+      animation: shake 0.2s;
+    }
+
+    .cell.wrong.x::after {
+      color: white;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      50% { transform: translateX(2px); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); }
+    }
+
+    .controls {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .mode-btn,
+    .submit-btn {
       padding: 10px 18px;
       border: none;
       border-radius: 10px;
@@ -90,6 +123,14 @@
       color: #222;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: #ffd369;
+    }
+
+    .submit-btn {
+      margin-top: 16px;
     }
 
     button:hover {
@@ -110,7 +151,12 @@
 
     <div class="nonogram" id="nonogram"></div>
 
-    <button onclick="checkAnswer()">입력</button>
+    <div class="controls">
+      <button class="mode-btn active" id="xBtn" onclick="setMode('x')">X</button>
+      <button class="mode-btn" id="fillBtn" onclick="setMode('fill')">■</button>
+    </div>
+
+    <button class="submit-btn" onclick="checkAnswer()">입력</button>
     <div class="message" id="message"></div>
   </div>
 
@@ -141,7 +187,6 @@
       "3"
     ];
 
-    // 1 = 칠해야 하는 칸, 0 = 빈칸
     const answer = [
       [0,0,0,0,1,1,0,0,0,0],
       [0,0,0,0,1,1,0,0,0,0],
@@ -157,7 +202,55 @@
 
     const nonogram = document.getElementById("nonogram");
     const message = document.getElementById("message");
+    const xBtn = document.getElementById("xBtn");
+    const fillBtn = document.getElementById("fillBtn");
+
     const cells = [];
+
+    let mode = "x";
+    let isDragging = false;
+    let dragAction = null;
+
+    function setMode(selectedMode) {
+      mode = selectedMode;
+
+      xBtn.classList.toggle("active", mode === "x");
+      fillBtn.classList.toggle("active", mode === "fill");
+    }
+
+    function clearWrong(cell) {
+      cell.classList.remove("wrong");
+    }
+
+    function applyCell(cell) {
+      clearWrong(cell);
+
+      if (mode === "fill") {
+        if (dragAction === null) {
+          dragAction = cell.classList.contains("checked") ? "remove" : "add";
+        }
+
+        if (dragAction === "add") {
+          cell.classList.add("checked");
+          cell.classList.remove("x");
+        } else {
+          cell.classList.remove("checked");
+        }
+      }
+
+      if (mode === "x") {
+        if (dragAction === null) {
+          dragAction = cell.classList.contains("x") ? "remove" : "add";
+        }
+
+        if (dragAction === "add") {
+          cell.classList.add("x");
+          cell.classList.remove("checked");
+        } else {
+          cell.classList.remove("x");
+        }
+      }
+    }
 
     function createBoard() {
       const corner = document.createElement("div");
@@ -185,8 +278,17 @@
           cell.dataset.row = r;
           cell.dataset.col = c;
 
-          cell.addEventListener("click", () => {
-            cell.classList.toggle("checked");
+          cell.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            isDragging = true;
+            dragAction = null;
+            applyCell(cell);
+          });
+
+          cell.addEventListener("mouseenter", () => {
+            if (isDragging) {
+              applyCell(cell);
+            }
           });
 
           cells[r][c] = cell;
@@ -195,16 +297,31 @@
       }
     }
 
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+      dragAction = null;
+    });
+
     function checkAnswer() {
+      let hasWrong = false;
+
       for (let r = 0; r < 10; r++) {
         for (let c = 0; c < 10; c++) {
-          const isChecked = cells[r][c].classList.contains("checked") ? 1 : 0;
+          const cell = cells[r][c];
+          const isChecked = cell.classList.contains("checked") ? 1 : 0;
+
+          cell.classList.remove("wrong");
 
           if (isChecked !== answer[r][c]) {
-            message.textContent = "😏 다시 확인해봐!";
-            return;
+            cell.classList.add("wrong");
+            hasWrong = true;
           }
         }
+      }
+
+      if (hasWrong) {
+        message.textContent = "😏 빨간 칸 다시 확인해봐!";
+        return;
       }
 
       message.textContent = "내가 자주 쓰는 비밀번호엔 1이 없는데^^";
