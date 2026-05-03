@@ -15,6 +15,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      user-select: none;
     }
 
     .container {
@@ -66,6 +67,7 @@
       grid-template-rows: 62px repeat(15, 28px);
       justify-content: center;
       margin-top: 24px;
+      touch-action: none;
     }
 
     .corner,
@@ -107,10 +109,63 @@
       height: 28px;
       background: #f5f5f5;
       cursor: pointer;
+      position: relative;
     }
 
     .cell.checked {
       background: #222;
+    }
+
+    .cell.x::after {
+      content: "✕";
+      color: #d64242;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .cell.wrong {
+      background: #ff4d4d !important;
+      animation: shake 0.2s;
+    }
+
+    .cell.wrong.x::after {
+      color: white;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      50% { transform: translateX(2px); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); }
+    }
+
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .mode-btn {
+      margin-top: 0;
+      min-width: 58px;
+      padding: 10px 18px;
+      background: #e8e2d8;
+      color: #333;
+    }
+
+    .mode-btn.active {
+      background: #333;
+      color: white;
+    }
+
+    .submit-btn {
+      margin-top: 16px;
     }
 
     .message {
@@ -141,8 +196,15 @@
 
     <div class="box" id="nonogramBox" style="display:none;">
       <h2>네모로직을 풀어라</h2>
+
       <div class="nonogram" id="nonogram"></div>
-      <button onclick="checkNonogram()">입력</button>
+
+      <div class="controls">
+        <button class="mode-btn active" id="xBtn" onclick="setMode('x')">X</button>
+        <button class="mode-btn" id="fillBtn" onclick="setMode('fill')">■</button>
+      </div>
+
+      <button class="submit-btn" onclick="checkNonogram()">입력</button>
       <div class="message" id="message"></div>
     </div>
   </div>
@@ -196,6 +258,51 @@
     const cells = [];
     let boardCreated = false;
 
+    let mode = "x";
+    let isDragging = false;
+    let dragAction = null;
+
+    function setMode(selectedMode) {
+      mode = selectedMode;
+
+      document.getElementById("xBtn").classList.toggle("active", mode === "x");
+      document.getElementById("fillBtn").classList.toggle("active", mode === "fill");
+    }
+
+    function clearWrong(cell) {
+      cell.classList.remove("wrong");
+    }
+
+    function applyCell(cell) {
+      clearWrong(cell);
+
+      if (mode === "fill") {
+        if (dragAction === null) {
+          dragAction = cell.classList.contains("checked") ? "remove" : "add";
+        }
+
+        if (dragAction === "add") {
+          cell.classList.add("checked");
+          cell.classList.remove("x");
+        } else {
+          cell.classList.remove("checked");
+        }
+      }
+
+      if (mode === "x") {
+        if (dragAction === null) {
+          dragAction = cell.classList.contains("x") ? "remove" : "add";
+        }
+
+        if (dragAction === "add") {
+          cell.classList.add("x");
+          cell.classList.remove("checked");
+        } else {
+          cell.classList.remove("x");
+        }
+      }
+    }
+
     function createBoard() {
       if (boardCreated) return;
       boardCreated = true;
@@ -224,9 +331,20 @@
         for (let c = 0; c < 15; c++) {
           const cell = document.createElement("div");
           cell.className = "cell";
+          cell.dataset.row = r;
+          cell.dataset.col = c;
 
-          cell.addEventListener("click", () => {
-            cell.classList.toggle("checked");
+          cell.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            isDragging = true;
+            dragAction = null;
+            applyCell(cell);
+          });
+
+          cell.addEventListener("mouseenter", () => {
+            if (isDragging) {
+              applyCell(cell);
+            }
           });
 
           cells[r][c] = cell;
@@ -235,20 +353,46 @@
       }
     }
 
-    function checkNonogram() {
-      for (let r = 0; r < 15; r++) {
-        for (let c = 0; c < 15; c++) {
-          const checked = cells[r][c].classList.contains("checked") ? 1 : 0;
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+      dragAction = null;
+    });
 
-          if (checked !== answer[r][c]) {
-            document.getElementById("message").textContent = "Nope";
-            return;
-          }
-        }
+    function checkNonogram() {
+  let hasWrong = false;
+  const message = document.getElementById("message");
+
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      const cell = cells[r][c];
+
+      const isChecked = cell.classList.contains("checked");
+      const isX = cell.classList.contains("x");
+      const correct = answer[r][c];
+
+      cell.classList.remove("wrong");
+
+      // ❌ 잘못 채운 경우 (■인데 정답은 0)
+      if (isChecked && correct === 0) {
+        cell.classList.add("wrong");
+        hasWrong = true;
       }
 
-      document.getElementById("message").textContent = "이건 어디에 보관되어 있게~";
+      // ❌ 잘못 X 표시한 경우 (X인데 정답은 1)
+      if (isX && correct === 1) {
+        cell.classList.add("wrong");
+        hasWrong = true;
+      }
     }
+  }
+
+  if (hasWrong) {
+    message.textContent = "😏 틀린 데만 빨개졌지? 다시 봐봐";
+    return;
+  }
+
+  message.textContent = "이건 어디에 보관되어 있게~";
+}
   </script>
 </body>
 </html>
